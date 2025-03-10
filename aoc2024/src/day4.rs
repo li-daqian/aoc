@@ -48,6 +48,39 @@ pub fn part1(input: &str) -> usize {
         .sum()
 }
 
+#[aoc(day4, part2)]
+#[must_use]
+pub fn part2(input: &str) -> usize {
+    let matrix = parse(input);
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let directions = [
+        (Direction::NorthWest, Direction::SouthEast),
+        (Direction::NorthEast, Direction::SouthWest),
+    ];
+    matrix
+        .iter()
+        .enumerate()
+        .flat_map(|(x, row)| {
+            row.iter()
+                .enumerate()
+                .filter_map(move |(y, &tile)| (tile == 'A').then_some((x, y)))
+        })
+        .filter(|&(x, y)| {
+            directions.iter().all(|(dir1, dir2)| {
+                dir1.propagate((x, y), rows, cols).and_then(|(x1, y1)| {
+                    dir2.propagate((x, y), rows, cols).and_then(|(x2, y2)| {
+                        Some(
+                            (matrix[x1][y1] == 'M' && matrix[x2][y2] == 'S')
+                                || (matrix[x1][y1] == 'S' && matrix[x2][y2] == 'M'),
+                        )
+                    })
+                }) == Some(true)
+            })
+        })
+        .count()
+}
+
 enum Direction {
     North,
     NorthWest,
@@ -127,5 +160,10 @@ mod tests {
     #[test]
     pub fn part1_example() {
         assert_eq!(part1(SAMPLE), 18);
+    }
+
+    #[test]
+    pub fn part2_example() {
+        assert_eq!(part2(SAMPLE), 9);
     }
 }

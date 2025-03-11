@@ -47,15 +47,15 @@ pub fn part1(input: &str) -> usize {
 fn topo_sort(
     a: usize,
     order: &mut Vec<usize>,
-    visited: &mut HashMap<usize, usize>,
+    bigger_map: &mut HashMap<usize, usize>,
     present: &HashSet<usize>,
     edges: &HashMap<usize, Vec<usize>>,
 ) {
     order.push(a);
     for b in edges.get(&a).unwrap_or(&Vec::new()) {
         if present.contains(b) {
-            if *visited.entry(*b).and_modify(|e| *e -= 1).or_insert(0) == 0 {
-                topo_sort(*b, order, visited, present, edges);
+            if *bigger_map.entry(*b).and_modify(|e| *e -= 1).or_insert(0) == 0 {
+                topo_sort(*b, order, bigger_map, present, edges);
             }
         }
     }
@@ -81,7 +81,7 @@ pub fn part2(input: &str) -> usize {
 
             let mut earlier: HashSet<usize> = HashSet::new();
             let mut ok = true;
-            let mut visited: HashMap<usize, usize> = HashMap::new();
+            let mut bigger_map: HashMap<usize, usize> = HashMap::new();
             let present: HashSet<usize> = page_numbers.iter().copied().collect();
             for page_number in &page_numbers {
                 edges
@@ -90,7 +90,7 @@ pub fn part2(input: &str) -> usize {
                     .iter()
                     .for_each(|after| {
                         if present.contains(after) {
-                            *visited.entry(*after).or_insert(0) += 1;
+                            *bigger_map.entry(*after).or_insert(0) += 1;
                         }
                         if earlier.contains(after) {
                             ok = false;
@@ -103,12 +103,12 @@ pub fn part2(input: &str) -> usize {
                 let mut order: Vec<usize> = Vec::new();
                 let mut starting: Vec<usize> = Vec::new();
                 for page_number in &page_numbers {
-                    if visited.get(page_number).unwrap_or(&0) == &0 {
+                    if bigger_map.get(page_number).unwrap_or(&0) == &0 {
                         starting.push(*page_number);
                     }
                 }
                 for x in starting {
-                    topo_sort(x, &mut order, &mut visited, &present, &edges);
+                    topo_sort(x, &mut order, &mut bigger_map, &present, &edges);
                 }
                 answer += order.get(order.len() / 2).unwrap_or(&0);
             }

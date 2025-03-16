@@ -86,25 +86,20 @@ impl Game {
     }
 
     fn has_loop(&mut self) -> bool {
-        // let mut walked = vec![
-        //     false;
-        //     (self.mazes.width * self.mazes.height * self.directions.len() as isize)
-        //         as usize
-        // ];
-        let mut i = 0;
+        let mut walked = vec![
+            false;
+            (self.mazes.width * self.mazes.height * self.directions.len() as isize)
+                as usize
+        ];
         loop {
-            // let i = ((self.player.location.0 * self.mazes.width) as usize
-            //     + (self.player.location.1) as usize)
-            //     * self.directions.len()
-            //     + self.player.direction;
-            // if walked[i] == true {
-            //     return true;
-            // }
-            // walked[i] = true;
-            i += 1;
-            if i > self.mazes.height * self.mazes.width {
+            let i = ((self.player.location.0 * self.mazes.width) as usize
+                + (self.player.location.1) as usize)
+                * self.directions.len()
+                + self.player.direction;
+            if walked[i] == true {
                 return true;
             }
+            walked[i] = true;
 
             if let Some(next) = self.peek() {
                 if next == '.' {
@@ -142,22 +137,30 @@ pub fn part1(input: &str) -> usize {
 #[must_use]
 pub fn part2(input: &str) -> usize {
     let mut game = Game::from_input(input);
-    let start = game.player.clone();
     let mut answer = 0;
-
-    (0..game.mazes.height).for_each(|x| {
-        (0..game.mazes.width).for_each(|y| {
-            if (x, y) != start.location && game.get_value((x, y)) != '#' {
-                game.set_value((x, y), '#');
-                if game.has_loop() {
-                    answer += 1;
+    let mut walked_path: HashSet<(isize, isize)> = HashSet::new();
+    loop {
+        walked_path.insert(game.player.location);
+        if let Some(next) = game.peek() {
+            if next == '.' {
+                let (next_x, next_y) = game.next();
+                if !walked_path.contains(&(next_x, next_y)) {
+                    let start = game.player.clone();
+                    game.set_value((next_x, next_y), '#');
+                    if game.has_loop() {
+                        answer += 1;
+                    }
+                    game.player = start;
+                    game.set_value((next_x, next_y), '.');
                 }
-                game.player = start;
-                game.set_value((x, y), '.');
+                game.move_forward();
+            } else {
+                game.change_direction();
             }
-        });
-    });
-    answer
+        } else {
+            return answer;
+        }
+    }
 }
 
 #[cfg(test)]

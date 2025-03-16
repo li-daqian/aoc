@@ -8,7 +8,7 @@ struct Game {
     directions: [(isize, isize); 4],
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy)]
 struct Player {
     location: (isize, isize),
     direction: usize,
@@ -85,7 +85,7 @@ impl Game {
         self.mazes.matrix[x as usize][y as usize] = c;
     }
 
-    fn has_loop(&mut self, (x, y): (isize, isize)) -> bool {
+    fn has_loop(&mut self) -> bool {
         // let mut walked = vec![
         //     false;
         //     (self.mazes.width * self.mazes.height * self.directions.len() as isize)
@@ -149,10 +149,10 @@ pub fn part2(input: &str) -> usize {
         (0..game.mazes.width).for_each(|y| {
             if (x, y) != start.location && game.get_value((x, y)) != '#' {
                 game.set_value((x, y), '#');
-                if game.has_loop((x, y)) {
+                if game.has_loop() {
                     answer += 1;
                 }
-                game.player = start.clone();
+                game.player = start;
                 game.set_value((x, y), '.');
             }
         });

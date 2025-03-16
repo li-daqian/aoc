@@ -30,11 +30,14 @@ fn check_answer_2(answer: usize, current: usize, input: &Vec<usize>, i: usize) -
     if i == input.len() {
         return current == answer;
     }
+    if current > answer {
+        return false;
+    }
     return check_answer_2(answer, current + input[i], input, i + 1)
         || check_answer_2(answer, current * input[i], input, i + 1)
         || check_answer_2(
             answer,
-            format!("{}{}", current, input[i]).parse::<usize>().unwrap(),
+            current * 10_usize.pow(input[i].to_string().len() as u32) + input[i],
             input,
             i + 1,
         );

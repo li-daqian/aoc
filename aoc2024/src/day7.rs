@@ -35,12 +35,15 @@ fn check_answer_2(answer: usize, current: usize, input: &Vec<usize>, i: usize) -
     }
     return check_answer_2(answer, current + input[i], input, i + 1)
         || check_answer_2(answer, current * input[i], input, i + 1)
-        || check_answer_2(
-            answer,
-            current * 10_usize.pow(input[i].to_string().len() as u32) + input[i],
-            input,
-            i + 1,
-        );
+        || check_answer_2(answer, concat(current, input[i]), input, i + 1);
+}
+
+fn concat(a: usize, b: usize) -> usize {
+    let mut shift = 1;
+    while shift <= b {
+        shift *= 10;
+    }
+    a * shift + b
 }
 
 #[aoc(day7, part1)]

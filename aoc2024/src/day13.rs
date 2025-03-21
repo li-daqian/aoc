@@ -2,16 +2,16 @@ use aoc_runner_derive::aoc;
 
 #[derive(Default, Debug)]
 struct ClawMachines {
-    ax: usize,
-    ay: usize,
-    bx: usize,
-    by: usize,
-    px: usize,
-    py: usize,
+    ax: isize,
+    ay: isize,
+    bx: isize,
+    by: isize,
+    px: isize,
+    py: isize,
 }
 
 impl ClawMachines {
-    fn calculate(&self) -> usize {
+    fn calculate(&self) -> isize {
         let mut tokens = 0;
         for i in 0..=self.px / self.ax {
             let j = (self.px - self.ax * i) / self.bx;
@@ -27,7 +27,7 @@ impl ClawMachines {
         tokens
     }
 
-    fn calculate_2(&self) -> usize {
+    fn calculate_2(&self) -> isize {
         // ax * i + bx * j = px
         // ay * i + by * j = py
         // i = (px - bx * j) / ax
@@ -36,21 +36,17 @@ impl ClawMachines {
         // ay * px - ay * bx * j + by * j * ax = py * ax
         // j * (by * ax - ay * bx) = py * ax - ay * px
 
-        let i = (self.py as isize * self.bx as isize - self.px as isize * self.by as isize)
-            / (self.ay as isize * self.bx as isize - self.ax as isize * self.by as isize);
-        let j = (self.py as isize * self.ax as isize - self.px as isize * self.ay as isize)
-            / (self.by as isize * self.ax as isize - self.bx as isize * self.ay as isize);
-        if i * self.ax as isize + j * self.bx as isize == self.px as isize
-            && i * self.ay as isize + j * self.by as isize == self.py as isize
-        {
-            return (i * 3 + j) as usize;
+        let i = (self.py * self.bx - self.px * self.by) / (self.ay * self.bx - self.ax * self.by);
+        let j = (self.py * self.ax - self.px * self.ay) / (self.by * self.ax - self.bx * self.ay);
+        if i * self.ax + j * self.bx == self.px && i * self.ay + j * self.by == self.py {
+            return i * 3 + j;
         }
         0
     }
 }
 
 #[aoc(day13, part1)]
-pub fn part1(input: &str) -> usize {
+pub fn part1(input: &str) -> isize {
     let mut claw_machines = ClawMachines::default();
     input.lines().fold(0, |acc, line| {
         if line.starts_with("Button A: ") {
@@ -58,8 +54,8 @@ pub fn part1(input: &str) -> usize {
                 let (key, value) = s.split_once('+').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.ax = value,
-                    "Y" => claw_machines.ay = value,
+                    "X" => claw_machines.ax = value as isize,
+                    "Y" => claw_machines.ay = value as isize,
                     _ => unreachable!(),
                 }
             });
@@ -68,8 +64,8 @@ pub fn part1(input: &str) -> usize {
                 let (key, value) = s.split_once('+').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.bx = value,
-                    "Y" => claw_machines.by = value,
+                    "X" => claw_machines.bx = value as isize,
+                    "Y" => claw_machines.by = value as isize,
                     _ => unreachable!(),
                 }
             });
@@ -78,8 +74,8 @@ pub fn part1(input: &str) -> usize {
                 let (key, value) = s.split_once('=').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.px = value,
-                    "Y" => claw_machines.py = value,
+                    "X" => claw_machines.px = value as isize,
+                    "Y" => claw_machines.py = value as isize,
                     _ => unreachable!(),
                 }
             });
@@ -92,7 +88,7 @@ pub fn part1(input: &str) -> usize {
 }
 
 #[aoc(day13, part2)]
-pub fn part2(input: &str) -> usize {
+pub fn part2(input: &str) -> isize {
     let mut claw_machines = ClawMachines::default();
     input.lines().fold(0, |acc, line| {
         if line.starts_with("Button A: ") {
@@ -100,8 +96,8 @@ pub fn part2(input: &str) -> usize {
                 let (key, value) = s.split_once('+').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.ax = value,
-                    "Y" => claw_machines.ay = value,
+                    "X" => claw_machines.ax = value as isize,
+                    "Y" => claw_machines.ay = value as isize,
                     _ => unreachable!(),
                 }
             });
@@ -110,8 +106,8 @@ pub fn part2(input: &str) -> usize {
                 let (key, value) = s.split_once('+').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.bx = value,
-                    "Y" => claw_machines.by = value,
+                    "X" => claw_machines.bx = value as isize,
+                    "Y" => claw_machines.by = value as isize,
                     _ => unreachable!(),
                 }
             });
@@ -120,8 +116,8 @@ pub fn part2(input: &str) -> usize {
                 let (key, value) = s.split_once('=').unwrap();
                 let value = value.parse::<usize>().unwrap();
                 match key {
-                    "X" => claw_machines.px = value + 10000000000000,
-                    "Y" => claw_machines.py = value + 10000000000000,
+                    "X" => claw_machines.px = value as isize + 10000000000000,
+                    "Y" => claw_machines.py = value as isize + 10000000000000,
                     _ => unreachable!(),
                 }
             });

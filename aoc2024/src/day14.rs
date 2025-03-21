@@ -74,19 +74,14 @@ impl Bathroom {
             });
         let mut count = 0;
         for i in 0..height {
-            for j in 0..width - 5 {
-                if r[i][j] == 'X'
-                    && r[i][j + 1] == 'X'
-                    && r[i][j + 2] == 'X'
-                    && r[i][j + 3] == 'X'
-                    && r[i][j + 4] == 'X'
-                {
+            for j in 0..width {
+                if i < height - 1 - i && r[i][j] == 'X' && r[height - 1 - i][j] == 'X' {
                     count += 1;
                 }
             }
         }
 
-        if count >= 5 {
+        if count >= 50 {
             r.iter().for_each(|row| {
                 row.iter().for_each(|&c| print!("{}", c));
                 println!();

@@ -1,5 +1,6 @@
 [workspace]
 members = ["aoc2024"]
+resolver = "2"
 
 [workspace.package]
 authors = ["Daqian Li <lidaqian11@gmail.com>"]

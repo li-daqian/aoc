@@ -89,8 +89,10 @@ impl WareHouse {
             } else {
                 let mut foods: Vec<(usize, usize, char)> = vec![];
                 if self.move_food(&mut foods, next_pos, dir) {
+                    foods.reverse();
                     foods.iter().for_each(|(x, y, c)| {
                         self.set(self.next_pos((*x, *y), dir).unwrap(), *c);
+                        self.set((*x, *y), '.');
                     });
                     self.set(next_pos, '.');
                     self.pos = next_pos;
@@ -105,30 +107,69 @@ impl WareHouse {
         pos: (usize, usize),
         dir: (isize, isize),
     ) -> bool {
-        if let Some(next_pos) = self.next_pos(pos, dir) {
-            let next = self.get(next_pos);
-            if next == '#' {
-                return false;
+        if dir.1 == 0 {
+            let current_c1 = self.get(pos);
+            let pos_2 = if current_c1 == '[' {
+                self.next_pos(pos, (0, 1))
+            } else if current_c1 == ']' {
+                self.next_pos(pos, (0, -1))
             } else {
-                let c = self.get(pos);
-                foods.push((pos.0, pos.1, c));
-                let neighbor_pos = if c == '[' {
-                    self.next_pos(pos, (0, 1))
-                } else if c == ']' {
-                    self.next_pos(pos, (0, -1))
-                } else {
-                    None
-                }
-                .unwrap();
-                if next == '[' || next == ']' {
-                    return self.move_food(foods, next_pos, dir)
-                        && self.move_food(foods, neighbor_pos, dir);
-                } else {
-                    return true && self.move_food(foods, next_pos, dir);
-                }
+                None
+            };
+            if pos_2.is_none() {
+                unreachable!();
             }
+            let next_pos_1 = self.next_pos(pos, dir);
+            if next_pos_1.is_none() {
+                return false;
+            }
+            let next_pos_2 = self.next_pos(pos_2.unwrap(), dir);
+            if next_pos_2.is_none() {
+                return false;
+            }
+            let (next_c1, next_c2) = (self.get(next_pos_1.unwrap()), self.get(next_pos_2.unwrap()));
+            if next_c1 == '#' || next_c2 == '#' {
+                return false;
+            }
+
+            let current_c2 = self.get(pos_2.unwrap());
+            foods.push((pos.0, pos.1, current_c1));
+            foods.push((pos_2.unwrap().0, pos_2.unwrap().1, current_c2));
+            if next_c1 == '.' && next_c2 == '.' {
+                return true;
+            }
+
+            if (next_c1 == '[' || next_c1 == ']') && (next_c2 == '[' || next_c2 == ']') {
+                return self.move_food(foods, next_pos_1.unwrap(), dir)
+                    && self.move_food(foods, next_pos_2.unwrap(), dir);
+            }
+
+            if next_c1 == '[' || next_c1 == ']' {
+                return self.move_food(foods, next_pos_1.unwrap(), dir);
+            }
+            if next_c2 == '[' || next_c2 == ']' {
+                return self.move_food(foods, next_pos_2.unwrap(), dir);
+            }
+            unreachable!()
         } else {
-            return false;
+            let next_pos = self.next_pos(pos, dir);
+            if next_pos.is_none() {
+                return false;
+            }
+            let next_c = self.get(next_pos.unwrap());
+            if next_c == '#' {
+                return false;
+            }
+
+            foods.push((pos.0, pos.1, self.get(pos)));
+            if next_c == '.' {
+                return true;
+            }
+
+            if next_c == '[' || next_c == ']' {
+                return self.move_food(foods, next_pos.unwrap(), dir);
+            }
+            unreachable!()
         }
     }
 }
@@ -252,37 +293,36 @@ mod tests {
     use super::*;
 
     const SAMPLE: &str = indoc! {"
-        ########
-        #..O.O.#
-        ##@.O..#
-        #...O..#
-        #.#.O..#
-        #...O..#
-        #......#
-        ########
+        ##########
+        #..O..O.O#
+        #......O.#
+        #.OO..O.O#
+        #..O@..O.#
+        #O#..O...#
+        #O..O..O.#
+        #.OO.O.OO#
+        #....O...#
+        ##########
 
-        <^^>>>vv<v>>v<<
-    "};
-
-    const SAMPLE2: &str = indoc! {"
-        #######
-        #...#.#
-        #.....#
-        #..OO@#
-        #..O..#
-        #.....#
-        #######
-
-        <vv<<^^<<^^
+        <vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+        vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+        ><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+        <<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+        ^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+        ^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+        >^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+        <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+        ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+        v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
     "};
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(SAMPLE), 2028);
+        assert_eq!(part1(SAMPLE), 10092);
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(SAMPLE2), 9021);
+        assert_eq!(part2(SAMPLE), 9021);
     }
 }

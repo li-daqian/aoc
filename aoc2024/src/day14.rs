@@ -62,7 +62,7 @@ impl Bathroom {
             .fold(1, |acc, &x| acc * x)
     }
 
-    fn is_egg(&self) -> bool {
+    fn is_tree(&self) -> bool {
         let height = self.height as usize;
         let width = self.width as usize;
         let r = self
@@ -106,7 +106,7 @@ pub fn part2(input: &str) -> usize {
     loop {
         bathroom.elapse(1);
         seconds += 1;
-        if bathroom.is_egg() {
+        if bathroom.is_tree() {
             break;
         }
     }

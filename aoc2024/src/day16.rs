@@ -1,4 +1,5 @@
 use std::{
+    cmp::Reverse,
     collections::{BinaryHeap, HashMap, HashSet},
     hash::Hash,
 };
@@ -18,27 +19,10 @@ struct Race {
     directions: [(i8, i8); 4],
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 struct Node {
     position: (usize, usize),
     direction: usize,
-}
-
-impl Ord for Node {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other
-            .position
-            .0
-            .cmp(&self.position.0)
-            .then_with(|| other.position.1.cmp(&other.position.1))
-            .then_with(|| other.direction.cmp(&self.direction))
-    }
-}
-
-impl PartialOrd for Node {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl Race {
@@ -77,13 +61,13 @@ impl Race {
     }
 
     fn find_min_cost(&self) -> usize {
-        let mut queue = BinaryHeap::new();
+        let mut queue: BinaryHeap<Reverse<(usize, Node)>> = BinaryHeap::new();
         let mut costs: HashMap<Node, usize> = HashMap::new();
         let start = Node {
             position: self.start,
             direction: 0,
         };
-        queue.push(start);
+        queue.push(Reverse((0, start)));
         costs.insert(start, 0);
 
         loop {
@@ -91,7 +75,7 @@ impl Race {
                 break;
             }
 
-            let current = queue.pop().unwrap();
+            let current = queue.pop().unwrap().0 .1;
             let dis = [
                 current.direction,
                 (current.direction + 1) % self.directions.len(),
@@ -120,7 +104,7 @@ impl Race {
 
                 if !costs.contains_key(&next) || costs[&next] > cost {
                     costs.insert(next, cost);
-                    queue.push(next);
+                    queue.push(Reverse((cost, next)));
                 }
             }
         }
@@ -134,13 +118,13 @@ impl Race {
     }
 
     fn find_min_path(&self) -> usize {
-        let mut queue = BinaryHeap::new();
+        let mut queue: BinaryHeap<Reverse<(usize, Node)>> = BinaryHeap::new();
         let mut costs: HashMap<Node, (usize, HashSet<(usize, usize)>)> = HashMap::new();
         let start = Node {
             position: self.start,
             direction: 0,
         };
-        queue.push(start);
+        queue.push(Reverse((0, start)));
         costs.insert(start, (0, HashSet::from([start.position])));
 
         loop {
@@ -148,7 +132,7 @@ impl Race {
                 break;
             }
 
-            let current = queue.pop().unwrap();
+            let current = queue.pop().unwrap().0 .1;
             let dis = [
                 current.direction,
                 (current.direction + 1) % self.directions.len(),
@@ -178,11 +162,11 @@ impl Race {
 
                 if !costs.contains_key(&next) || cost < costs[&next].0 {
                     costs.insert(next, (cost, paths));
-                    queue.push(next);
+                    queue.push(Reverse((cost, next)));
                 } else if costs[&next].0 == cost {
                     if let Some(entry) = costs.get_mut(&next) {
                         entry.1.extend(paths);
-                        queue.push(next);
+                        queue.push(Reverse((cost, next)));
                     }
                 }
             }

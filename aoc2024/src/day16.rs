@@ -166,7 +166,6 @@ impl Race {
                 } else if costs[&next].0 == cost {
                     if let Some(entry) = costs.get_mut(&next) {
                         entry.1.extend(paths);
-                        queue.push(Reverse((cost, next)));
                     }
                 }
             }

@@ -1,10 +1,11 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BinaryHeap, HashMap},
     hash::Hash,
 };
 
 use aoc_runner_derive::aoc;
+use bit_vec::BitVec;
 
 struct Maze {
     grid: Vec<Vec<char>>,
@@ -119,13 +120,15 @@ impl Race {
 
     fn find_min_path(&self) -> usize {
         let mut queue: BinaryHeap<Reverse<(usize, Node)>> = BinaryHeap::new();
-        let mut costs: HashMap<Node, (usize, HashSet<(usize, usize)>)> = HashMap::new();
+        let mut costs: HashMap<Node, (usize, BitVec)> = HashMap::new();
         let start = Node {
             position: self.start,
             direction: 0,
         };
         queue.push(Reverse((0, start)));
-        costs.insert(start, (0, HashSet::from([start.position])));
+        let mut start_path = BitVec::from_elem(self.maze.height * self.maze.width, false);
+        start_path.set(start.position.0 * self.maze.height + start.position.1, true);
+        costs.insert(start, (0, start_path));
 
         loop {
             if queue.is_empty() {
@@ -153,7 +156,7 @@ impl Race {
                     if next.position.0 >= self.maze.height || next.position.1 >= self.maze.width {
                         panic!();
                     }
-                    paths.insert(next.position);
+                    paths.set(next.position.0 * self.maze.width + next.position.1, true);
                     cost += 1;
                 } else {
                     next.direction = dis[i];
@@ -165,7 +168,7 @@ impl Race {
                     queue.push(Reverse((cost, next)));
                 } else if costs[&next].0 == cost {
                     if let Some(entry) = costs.get_mut(&next) {
-                        entry.1.extend(paths);
+                        entry.1.or(&paths);
                     }
                 }
             }
@@ -175,7 +178,10 @@ impl Race {
             .iter()
             .filter(|(node, _)| node.position == self.end)
             .fold(
-                (usize::MAX, HashSet::new()),
+                (
+                    usize::MAX,
+                    BitVec::from_elem(self.maze.height * self.maze.width, false),
+                ),
                 |(min_cost, mut agg_paths), (_, (cost, paths))| {
                     if *cost < min_cost {
                         (*cost, paths.clone())
@@ -188,7 +194,7 @@ impl Race {
                 },
             )
             .1
-            .len()
+            .count_ones() as usize
     }
 }
 

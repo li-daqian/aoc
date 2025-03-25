@@ -1,6 +1,6 @@
 use aoc_runner_derive::aoc;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 struct Register {
     a: usize,
     b: usize,
@@ -66,49 +66,49 @@ impl Simulater {
     fn execute(&mut self) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
         let mut ip = self.ip;
+        let register = &mut self.register;
 
         loop {
             if ip >= self.instructions.len() {
                 break;
             }
-            println!("Before {:?} {:?}", self.register, &self.instructions[ip]);
+            println!("Before {:?} {:?}", register, &self.instructions[ip]);
+
             let instruction = &self.instructions[ip];
             let opcode = instruction.opcode;
             let operand = instruction.operand;
             match opcode {
                 0 => {
-                    self.register.a >>= combo(&self.register, operand);
+                    register.a >>= combo(register, operand);
                 }
                 1 => {
-                    self.register.b ^= combo(&self.register, operand);
+                    register.b ^= combo(register, operand);
                 }
                 2 => {
-                    self.register.b = combo(&self.register, operand) % 8;
+                    register.b = combo(register, operand) % 8;
                 }
                 3 => {
-                    if self.register.a == 0 {
-                        continue;
-                    } else {
-                        ip = combo(&self.register, operand);
+                    if register.a != 0 {
+                        ip = combo(register, operand);
                         continue;
                     }
                 }
                 4 => {
-                    self.register.b ^= self.register.c;
+                    register.b ^= register.c;
                 }
                 5 => {
-                    output.push((combo(&self.register, operand) % 8) as u8);
+                    output.push((combo(register, operand) % 8) as u8);
                 }
                 6 => {
-                    self.register.b = self.register.a >> combo(&self.register, operand);
+                    register.b = register.a >> combo(register, operand);
                 }
                 7 => {
-                    self.register.c = self.register.a >> combo(&self.register, operand);
+                    register.c = register.a >> combo(register, operand);
                 }
                 _ => panic!("Invalid opcode"),
             }
             ip += 1;
-            println!("After {:?} {:?}", self.register, output);
+            println!("After {:?} {:?}", register, output);
         }
 
         output

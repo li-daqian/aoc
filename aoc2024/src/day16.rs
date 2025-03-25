@@ -156,7 +156,7 @@ impl Race {
                     if next.position.0 >= self.maze.height || next.position.1 >= self.maze.width {
                         panic!();
                     }
-                    paths.set(next.position.0 * self.maze.width + next.position.1, true);
+                    paths.set(next.position.0 * self.maze.height + next.position.1, true);
                     cost += 1;
                 } else {
                     next.direction = dis[i];
@@ -186,7 +186,7 @@ impl Race {
                     if *cost < min_cost {
                         (*cost, paths.clone())
                     } else if *cost == min_cost {
-                        agg_paths.extend(paths);
+                        agg_paths.or(paths);
                         (min_cost, agg_paths)
                     } else {
                         (min_cost, agg_paths)

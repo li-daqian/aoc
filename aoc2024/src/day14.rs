@@ -1,3 +1,5 @@
+use std::vec;
+
 use aoc_runner_derive::aoc;
 
 #[derive(Debug)]
@@ -65,27 +67,35 @@ impl Bathroom {
     fn is_tree(&self) -> bool {
         let height = self.height as usize;
         let width = self.width as usize;
-        let r = self
-            .robots
-            .iter()
-            .fold(vec![vec![' '; width]; height], |mut acc, robot| {
-                acc[robot.p.1 as usize][robot.p.0 as usize] = 'X';
-                acc
-            });
+        let robot_bits =
+            self.robots
+                .iter()
+                .fold(vec![vec![false; width]; height], |mut acc, robot| {
+                    let col = robot.p.0 as usize;
+                    let row = robot.p.1 as usize;
+                    acc[row][col] = true;
+                    acc
+                });
         let mut count = 0;
-        for i in 0..height {
-            for j in 0..width {
-                if i < height - 1 - i && r[i][j] == 'X' && r[height - 1 - i][j] == 'X' {
-                    count += 1;
-                }
+        self.robots.iter().for_each(|robot| {
+            let col = robot.p.0 as usize;
+            let row = robot.p.1 as usize;
+            if row < height - 1 - row && robot_bits[height - 1 - row][col] {
+                count += 1;
             }
-        }
+        });
 
         if count >= 50 {
-            r.iter().for_each(|row| {
-                row.iter().for_each(|&c| print!("{}", c));
+            for row in 0..height {
+                for col in 0..width {
+                    if robot_bits[row][col] {
+                        print!("X");
+                    } else {
+                        print!(" ");
+                    }
+                }
                 println!();
-            });
+            }
             return true;
         }
         false

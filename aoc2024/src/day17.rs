@@ -1,3 +1,5 @@
+use std::{cmp::Reverse, collections::BinaryHeap};
+
 use aoc_runner_derive::aoc;
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -21,19 +23,13 @@ struct Simulater {
 }
 
 fn combo(register: &Register, operand: u8) -> usize {
-    if operand <= 3 {
-        return operand as usize;
+    match operand {
+        0..=3 => operand as usize,
+        4 => register.a,
+        5 => register.b,
+        6 => register.c,
+        _ => panic!("Invalid operand"),
     }
-    if operand == 4 {
-        return register.a;
-    }
-    if operand == 5 {
-        return register.b;
-    }
-    if operand == 6 {
-        return register.c;
-    }
-    panic!("Invalid operand");
 }
 
 impl Simulater {
@@ -72,7 +68,6 @@ impl Simulater {
             if ip >= self.instructions.len() {
                 break;
             }
-            println!("Before {:?} {:?}", register, &self.instructions[ip]);
 
             let instruction = &self.instructions[ip];
             let opcode = instruction.opcode;
@@ -82,7 +77,7 @@ impl Simulater {
                     register.a >>= combo(register, operand);
                 }
                 1 => {
-                    register.b ^= combo(register, operand);
+                    register.b ^= operand as usize;
                 }
                 2 => {
                     register.b = combo(register, operand) % 8;
@@ -108,7 +103,6 @@ impl Simulater {
                 _ => panic!("Invalid opcode"),
             }
             ip += 1;
-            println!("After {:?} {:?}", register, output);
         }
 
         output
@@ -124,6 +118,45 @@ pub fn part1(input: &str) -> String {
         .map(|x| x.to_string())
         .collect::<Vec<_>>()
         .join(",")
+}
+
+// 2,4 -> B=A%8
+// 1,7 -> B^=7
+// 7,5 -> C=A>>B
+// 0,3 -> A>>=3
+// 1,7 -> B^=7
+// 4,1 -> B^=C
+// 5,5 -> output.push(B%8)
+// 3,0 -> if A!=0 GOTO 0
+#[aoc(day17, part2)]
+pub fn part2(input: &str) -> usize {
+    let mut simulater = Simulater::from(input);
+    let targets = simulater
+        .instructions
+        .iter()
+        .flat_map(|x| vec![x.opcode, x.operand])
+        .collect::<Vec<_>>();
+
+    let mut cands: BinaryHeap<Reverse<usize>> = BinaryHeap::new();
+    for i in 1..8 {
+        cands.push(Reverse(i));
+    }
+    while let Some(Reverse(a)) = cands.pop() {
+        simulater.register.a = a;
+        simulater.ip = 0;
+        let output = simulater.execute();
+        if output == targets {
+            return a;
+        }
+
+        if output == targets[targets.len() - output.len()..] {
+            for i in 0..8 {
+                cands.push(Reverse((a << 3) + i));
+            }
+        }
+    }
+
+    panic!("No solution found")
 }
 
 #[cfg(test)]
@@ -142,5 +175,17 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(SAMPLE), "4,6,3,5,6,3,5,2,1,0");
+    }
+
+    #[test]
+    fn test_part2() {
+        let sample: &str = indoc! {"
+            Register A: 2024
+            Register B: 0
+            Register C: 0
+
+            Program: 0,3,5,4,3,0
+        "};
+        assert_eq!(part2(sample), 117440);
     }
 }

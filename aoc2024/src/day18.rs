@@ -1,4 +1,8 @@
-use std::{cmp::Reverse, collections::BinaryHeap, fmt::Display};
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, VecDeque},
+    fmt::Display,
+};
 
 use aoc_runner_derive::aoc;
 
@@ -87,6 +91,7 @@ impl Maze {
         steps[end.0][end.1]
     }
 
+    #[allow(dead_code)]
     fn can_escape(&self, start: (usize, usize), end: (usize, usize)) -> bool {
         let mut queue: BinaryHeap<Reverse<(usize, (usize, usize))>> = BinaryHeap::new();
         let mut visited: Vec<Vec<bool>> = vec![vec![false; self.width]; self.height];
@@ -108,6 +113,7 @@ impl Maze {
         false
     }
 
+    #[allow(dead_code)]
     fn find_first_byte(&mut self, start: (usize, usize), end: (usize, usize)) -> usize {
         let mut min = 2usize;
         let mut max = self.bytes.len() - 1;
@@ -122,6 +128,38 @@ impl Maze {
         }
         max
     }
+
+    fn resolve_first_byte(&mut self, start: (usize, usize), end: (usize, usize)) -> usize {
+        let max_value = self.bytes.len() + 1;
+        let mut value = vec![vec![max_value; self.width]; self.height];
+        let mut dist = vec![vec![0usize; self.width]; self.height];
+        for (i, &(row, col)) in self.bytes.iter().enumerate() {
+            value[row][col] = i + 1;
+        }
+
+        let (start_row, start_col) = start;
+        dist[start_row][start_col] = value[start_row][start_col];
+        let mut queue: Vec<VecDeque<(usize, usize)>> = vec![VecDeque::new(); max_value + 1];
+        queue[dist[start_row][start_col]].push_back((start_row, start_col));
+
+        for v in (0..=max_value).rev() {
+            while let Some((row, col)) = queue[v].pop_front() {
+                if dist[row][col] != v {
+                    continue;
+                }
+                for d in Self::DIRS {
+                    if let Some((new_row, new_col)) = self.try_move((row, col), d) {
+                        let x = v.min(value[new_row][new_col]);
+                        if x > dist[new_row][new_col] {
+                            dist[new_row][new_col] = x;
+                            queue[x].push_back((new_row, new_col));
+                        }
+                    }
+                }
+            }
+        }
+        dist[end.0][end.1] - 1
+    }
 }
 
 #[aoc(day18, part1)]
@@ -134,7 +172,8 @@ pub fn part1(input: &str) -> usize {
 #[aoc(day18, part2)]
 pub fn part2(input: &str) -> String {
     let mut maze = Maze::from(input, 71, 71);
-    let first_byte = maze.find_first_byte((0, 0), (70, 70));
+    // let first_byte = maze.find_first_byte((0, 0), (70, 70));
+    let first_byte = maze.resolve_first_byte((0, 0), (70, 70));
     format!("{},{}", maze.bytes[first_byte].1, maze.bytes[first_byte].0)
 }
 
@@ -182,7 +221,7 @@ pub mod tests {
     #[test]
     fn test_part2() {
         let mut maze = Maze::from(SAMPLE, 7, 7);
-        let first_byte = maze.find_first_byte((0, 0), (6, 6));
+        let first_byte = maze.resolve_first_byte((0, 0), (6, 6));
         assert_eq!(first_byte, 20);
     }
 }

@@ -7,19 +7,24 @@ pub fn part1(input: &str) -> usize {
     let mut lines = input.lines();
 
     let line = lines.next().unwrap();
-    let (pattern_set, min_pattern_len) = line.split(',').fold(
-        (HashSet::new(), usize::MAX),
-        |(mut set, min_len), pattern| {
+    let (pattern_set, min_pattern_len, max_pattern_len) = line.split(',').fold(
+        (HashSet::new(), usize::MAX, 0),
+        |(mut set, min_len, max_len), pattern| {
             let pattern = pattern.trim();
             let len = pattern.len();
             set.insert(pattern);
-            (set, min_len.min(len))
+            (set, min_len.min(len), max_len.max(len))
         },
     );
 
     lines.skip(1).fold(0, |acc, line| {
         let mut memo: HashMap<&str, bool> = HashMap::new();
-        if can_resovle(&line, &pattern_set, min_pattern_len, &mut memo) {
+        if can_resovle(
+            &line,
+            &pattern_set,
+            (min_pattern_len, max_pattern_len),
+            &mut memo,
+        ) {
             acc + 1
         } else {
             acc
@@ -30,7 +35,7 @@ pub fn part1(input: &str) -> usize {
 fn can_resovle<'a>(
     line: &'a str,
     pattern_set: &HashSet<&str>,
-    min_pattern_len: usize,
+    (min_pattern_len, max_pattern_len): (usize, usize),
     memo: &mut HashMap<&'a str, bool>,
 ) -> bool {
     if line.is_empty() {
@@ -42,9 +47,14 @@ fn can_resovle<'a>(
     }
 
     let len = line.len();
-    for j in min_pattern_len..=len {
+    for j in min_pattern_len..=len.min(max_pattern_len) {
         if pattern_set.contains(&line[..j])
-            && can_resovle(&line[j..], pattern_set, min_pattern_len, memo)
+            && can_resovle(
+                &line[j..],
+                pattern_set,
+                (min_pattern_len, max_pattern_len),
+                memo,
+            )
         {
             memo.insert(&line[..j], true);
             memo.insert(line, true);
@@ -61,27 +71,32 @@ pub fn part2(input: &str) -> usize {
     let mut lines = input.lines();
 
     let line = lines.next().unwrap();
-    let (pattern_set, min_pattern_len) = line.split(',').fold(
-        (HashSet::new(), usize::MAX),
-        |(mut set, min_len), pattern| {
+    let (pattern_set, min_pattern_len, max_pattern_len) = line.split(',').fold(
+        (HashSet::new(), usize::MAX, 0),
+        |(mut set, min_len, max_len), pattern| {
             let pattern = pattern.trim();
             let len = pattern.len();
             set.insert(pattern);
-            (set, min_len.min(len))
+            (set, min_len.min(len), max_len.max(len))
         },
     );
 
     let mut global_dp: HashMap<&str, usize> = HashMap::new();
 
     lines.skip(1).fold(0, |acc, line| {
-        acc + count_ways(&line, &pattern_set, min_pattern_len, &mut global_dp)
+        acc + count_ways(
+            &line,
+            &pattern_set,
+            (min_pattern_len, max_pattern_len),
+            &mut global_dp,
+        )
     })
 }
 
 fn count_ways<'a>(
     line: &'a str,
     pattern_set: &HashSet<&str>,
-    min_pattern_len: usize,
+    (min_pattern_len, max_pattern_len): (usize, usize),
     memo: &mut HashMap<&'a str, usize>,
 ) -> usize {
     if line.is_empty() {
@@ -94,9 +109,14 @@ fn count_ways<'a>(
 
     let mut total = 0;
     let len = line.len();
-    for j in min_pattern_len..=len {
+    for j in min_pattern_len..=len.min(max_pattern_len) {
         if pattern_set.contains(&line[..j]) {
-            total += count_ways(&line[j..], pattern_set, min_pattern_len, memo);
+            total += count_ways(
+                &line[j..],
+                pattern_set,
+                (min_pattern_len, max_pattern_len),
+                memo,
+            );
         }
     }
 

@@ -7,18 +7,30 @@ use std::{
 use aoc_runner_derive::aoc;
 
 type Keypad<'a> = &'a [&'a [u8]];
-const PAD1: Keypad = &[b"789", b"456", b"123", b" 0A"];
-const PAD2: Keypad = &[b" ^A", b"<v>"];
+const OUT_PAD: Keypad = &[b"789", b"456", b"123", b" 0A"];
+const MOVE_PAD: Keypad = &[b" ^A", b"<v>"];
 
-fn pad_move(row: usize, col: usize, m: u8, keypad: Keypad) -> (usize, usize, Option<u8>) {
-    match m {
-        b'^' => (row.checked_sub(1).unwrap_or(usize::MAX), col, None),
-        b'>' => (row, col.checked_add(1).unwrap_or(usize::MAX), None),
-        b'v' => (row.checked_add(1).unwrap_or(usize::MAX), col, None),
-        b'<' => (row, col.checked_sub(1).unwrap_or(usize::MAX), None),
-        b'A' => (row, col, Some(keypad[row][col])),
-        _ => unreachable!(),
+fn pad_move(keypad: Keypad, row: usize, col: usize, m: u8) -> (Option<(usize, usize)>, Option<u8>) {
+    if m == b'A' {
+        return (Some((row, col)), Some(keypad[row][col]));
     }
+    let (row, col) = (row as isize, col as isize);
+    let (height, width) = (keypad.len() as isize, keypad[0].len() as isize);
+    let (next_row, next_col) = match m {
+        b'^' => (row - 1, col),
+        b'>' => (row, col + 1),
+        b'v' => (row + 1, col),
+        b'<' => (row, col - 1),
+        _ => unreachable!(),
+    };
+    if next_row < 0 || next_row >= height || next_col < 0 || next_col >= width {
+        return (None, None);
+    }
+    let (next_row, next_col) = (next_row as usize, next_col as usize);
+    if keypad[next_row][next_col] == b' ' {
+        return (None, None);
+    }
+    return (Some((next_row, next_col)), None);
 }
 
 fn calculate_cost(
@@ -42,27 +54,22 @@ fn calculate_cost(
         _ => unreachable!(),
     };
     let mut q = BinaryHeap::from(vec![Reverse((0, start, b'A', 0))]);
-    while let Some(Reverse((d, (r, c), prev, out))) = q.pop() {
+    while let Some(Reverse((d, (row, col), prev, out))) = q.pop() {
         if out == goal {
             cache.insert((goal, prev_m, pads), d);
             return d;
         }
         for &m in b"A^<v>" {
-            let (rr, cc, x) = pad_move(r, c, m, PAD2);
-            if *PAD2.get(rr).and_then(|row| row.get(cc)).unwrap_or(&b' ') == b' ' {
+            let (next, x) = pad_move(MOVE_PAD, row, col, m);
+            if next.is_none() {
                 continue;
             }
             let x = x.unwrap_or(0);
             if x != 0 && x != goal {
                 continue;
             }
-            // println!(
-            //     "move:{} curr:{} prev:{} goal: {} pads:{}",
-            //     m as char, PAD2[r][c] as char, prev as char, goal as char, pads
-            // );
-            // println!("{} {} {} {}", x as char, goal as char, prev as char, pads);
             let d = d + calculate_cost(cache, m, prev, pads - 1);
-            q.push(Reverse((d, (rr, cc), m, x)));
+            q.push(Reverse((d, next.unwrap(), m, x)));
         }
     }
     unreachable!()
@@ -71,18 +78,18 @@ fn calculate_cost(
 fn solve(cache: &mut HashMap<(u8, u8, usize), usize>, code: &[u8], pads: usize) -> usize {
     let mut q = BinaryHeap::from(vec![Reverse((0, (3, 2), b'A', 0))]);
     let mut seen = HashMap::new();
-    while let Some(Reverse((d, (r, c), prev, l))) = q.pop() {
+    while let Some(Reverse((d, (row, col), prev, l))) = q.pop() {
         if l == code.len() {
             return d;
         }
-        let k = ((r, c), prev, l);
+        let k = ((row, col), prev, l);
         if seen.contains_key(&k) {
             continue;
         }
         seen.insert(k, d);
         for &m in b"A^<v>" {
-            let (rr, cc, x) = pad_move(r, c, m, PAD1);
-            if *PAD1.get(rr).and_then(|row| row.get(cc)).unwrap_or(&b' ') == b' ' {
+            let (next, x) = pad_move(OUT_PAD, row, col, m);
+            if next.is_none() {
                 continue;
             }
             let mut l = l;
@@ -93,7 +100,7 @@ fn solve(cache: &mut HashMap<(u8, u8, usize), usize>, code: &[u8], pads: usize) 
                 l += 1;
             }
             let d = d + calculate_cost(cache, m, prev, pads);
-            q.push(Reverse((d, (rr, cc), m, l)));
+            q.push(Reverse((d, next.unwrap(), m, l)));
         }
     }
     unreachable!()

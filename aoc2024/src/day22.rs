@@ -47,7 +47,6 @@ pub fn part2(input: &str) -> usize {
                 + (c - b + 10) as usize * 20
                 + (d - c + 10) as usize * 400
                 + (e - d + 10) as usize * 8000;
-            // let changes = ((b - a) + (c - b) * 20 + (d - c) * 400 + (e - d) * 8000) as usize;
 
             if !visited[changes] {
                 visited[changes] = true;

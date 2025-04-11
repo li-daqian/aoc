@@ -47,6 +47,51 @@ pub fn part1(input: &str) -> usize {
     answer
 }
 
+#[aoc(day24, part2)]
+pub fn part2(input: &str) -> String {
+    let (_, connections) = unsafe { input.split_once("\n\n").unwrap_unchecked() };
+    let connections = connections.lines().map(|line| unsafe {
+        let op = line.chars().nth(4).unwrap_unchecked();
+        if op == 'O' {
+            (
+                line.get_unchecked(0..3),
+                op,
+                line.get_unchecked(7..10),
+                line.get_unchecked(14..17),
+            )
+        } else {
+            (
+                line.get_unchecked(0..3),
+                op,
+                line.get_unchecked(8..11),
+                line.get_unchecked(15..18),
+            )
+        }
+    });
+
+    let connection_cache = connections
+        .clone()
+        .flat_map(|(l, op, r, _)| [(l, op), (r, op)])
+        .collect::<std::collections::HashSet<_>>();
+
+    let mut results = connections
+        .filter_map(|(l, op, r, ret)| match op {
+            'A' => {
+                (l != "x00" && r != "x00" && !connection_cache.contains(&(ret, 'O'))).then_some(ret)
+            }
+            'X' => (((l.starts_with('x') || r.starts_with('x'))
+                && (l != "x00" && r != "x00" && !connection_cache.contains(&(ret, 'X'))))
+                || (!ret.starts_with('z') && !l.starts_with('x') && !r.starts_with('x')))
+            .then_some(ret),
+            'O' => (ret.starts_with('z') && ret != "z45").then_some(ret),
+            _ => unreachable!(),
+        })
+        .collect::<Vec<_>>();
+
+    results.sort_unstable();
+    results.join(",")
+}
+
 fn cal<'a>(
     input: &Vec<&'a str>,
     k: &'a str,

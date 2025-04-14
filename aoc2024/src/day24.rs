@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use aoc_runner_derive::aoc;
 
 #[aoc(day24, part1)]
 pub fn part1(input: &str) -> usize {
-    let (input1, input2) = input.split_once("\n\n").unwrap();
-    let mut kv = input1
+    let (values, connections) = input.split_once("\n\n").unwrap();
+    let mut values = values
         .lines()
         .map(|line| {
             let (k, v) = line.split_once(": ").unwrap();
@@ -13,7 +13,7 @@ pub fn part1(input: &str) -> usize {
         })
         .collect();
 
-    let operation = input2
+    let connections = connections
         .lines()
         .map(|line| {
             let (input, out) = line.split_once(" -> ").unwrap();
@@ -22,12 +22,12 @@ pub fn part1(input: &str) -> usize {
         })
         .collect();
 
-    for (&out, input) in &operation {
-        cal(input, out, &mut kv, &operation);
+    for (&out, _) in &connections {
+        cal(out, &mut values, &connections);
     }
 
     let answer = {
-        let mut keys = kv
+        let mut keys = values
             .keys()
             .filter(|&k| k.starts_with("z"))
             .collect::<Vec<_>>();
@@ -35,7 +35,7 @@ pub fn part1(input: &str) -> usize {
         keys.into_iter().enumerate().fold(
             0usize,
             |acc, (i, k)| {
-                if kv[k] {
+                if values[k] {
                     acc | (1 << i)
                 } else {
                     acc
@@ -49,68 +49,67 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day24, part2)]
 pub fn part2(input: &str) -> String {
-    let (_, connections) = unsafe { input.split_once("\n\n").unwrap_unchecked() };
-    let connections = connections.lines().map(|line| unsafe {
-        let op = line.chars().nth(4).unwrap_unchecked();
-        if op == 'O' {
-            (
-                line.get_unchecked(0..3),
-                op,
-                line.get_unchecked(7..10),
-                line.get_unchecked(14..17),
-            )
-        } else {
-            (
-                line.get_unchecked(0..3),
-                op,
-                line.get_unchecked(8..11),
-                line.get_unchecked(15..18),
-            )
-        }
-    });
+    let (_, connections) = input.split_once("\n\n").unwrap();
 
-    let connection_cache = connections
+    let connections: Vec<Vec<&str>> = connections
+        .lines()
+        .map(|line| {
+            let (input, out) = line.split_once(" -> ").unwrap();
+            let mut input = input.split(" ").collect::<Vec<_>>();
+            input.push(out);
+            input
+        })
+        .collect();
+
+    let related_gates = connections
         .clone()
-        .flat_map(|(l, op, r, _)| [(l, op), (r, op)])
-        .collect::<std::collections::HashSet<_>>();
+        .iter()
+        .fold(HashSet::new(), |mut acc, c| {
+            let (l, op, r) = (c[0], c[1], c[2]);
+            acc.insert((l, op));
+            acc.insert((r, op));
+            acc
+        });
 
-    let mut results = connections
-        .filter_map(|(l, op, r, ret)| match op {
-            'A' => {
-                (l != "x00" && r != "x00" && !connection_cache.contains(&(ret, 'O'))).then_some(ret)
+    let mut answers = connections
+        .iter()
+        .filter_map(|c| {
+            let (l, op, r, out) = (c[0], c[1], c[2], c[3]);
+            match op {
+                "AND" => (l != "x00" && r != "x00" && !related_gates.contains(&(out, "OR")))
+                    .then_some(out),
+                "OR" => (out.starts_with("z") && out != "z45").then_some(out),
+                "XOR" => ((l.starts_with("x") || r.starts_with("x"))
+                    && (l != "x00" && r != "x00" && !related_gates.contains(&(out, "XOR")))
+                    || (!out.starts_with("z") && !l.starts_with("x") && !r.starts_with("x")))
+                .then_some(out),
+                _ => unreachable!(),
             }
-            'X' => (((l.starts_with('x') || r.starts_with('x'))
-                && (l != "x00" && r != "x00" && !connection_cache.contains(&(ret, 'X'))))
-                || (!ret.starts_with('z') && !l.starts_with('x') && !r.starts_with('x')))
-            .then_some(ret),
-            'O' => (ret.starts_with('z') && ret != "z45").then_some(ret),
-            _ => unreachable!(),
         })
         .collect::<Vec<_>>();
-
-    results.sort_unstable();
-    results.join(",")
+    answers.sort();
+    answers.join(",")
 }
 
 fn cal<'a>(
-    input: &Vec<&'a str>,
     k: &'a str,
     kv: &mut HashMap<&'a str, bool>,
-    operation: &HashMap<&'a str, Vec<&'a str>>,
+    connections: &HashMap<&'a str, Vec<&'a str>>,
 ) -> bool {
-    let (a, op, c) = (input[0], input[1], input[2]);
-    if !kv.contains_key(a) {
-        let v = cal(&operation[a], a, kv, operation);
-        kv.insert(a, v);
+    let input = &connections[k];
+    let (l, op, r) = (input[0], input[1], input[2]);
+    if !kv.contains_key(l) {
+        let v = cal(l, kv, connections);
+        kv.insert(l, v);
     }
-    if !kv.contains_key(c) {
-        let v = cal(&operation[c], c, kv, operation);
-        kv.insert(c, v);
+    if !kv.contains_key(r) {
+        let v = cal(r, kv, connections);
+        kv.insert(r, v);
     }
     let v = match op {
-        "AND" => kv[a] && kv[c],
-        "OR" => kv[a] || kv[c],
-        "XOR" => kv[a] != kv[c],
+        "AND" => kv[l] && kv[r],
+        "OR" => kv[l] || kv[r],
+        "XOR" => kv[l] != kv[r],
         _ => unreachable!(),
     };
     kv.insert(k, v);

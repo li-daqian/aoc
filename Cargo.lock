@@ -32,6 +32,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc2023"
+version = "0.1.0"
+dependencies = [
+ "aoc-runner",
+ "aoc-runner-derive",
+ "bit-vec",
+ "indoc",
+]
+
+[[package]]
 name = "aoc2024"
 version = "0.1.0"
 dependencies = [

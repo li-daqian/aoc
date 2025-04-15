@@ -19,7 +19,7 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day1, part2)]
 pub fn part2(input: &str) -> usize {
-    let word_to_digit: &[&[u8]] = &[
+    const DIGITS: &[&[u8]] = &[
         b"one", b"two", b"three", b"four", b"five", b"six", b"seven", b"eight", b"nine",
     ];
 
@@ -29,10 +29,10 @@ pub fn part2(input: &str) -> usize {
             let line = line.as_bytes();
             let mut digits = (0..line.len()).filter_map(|i| match line[i] {
                 b'0'..=b'9' => Some((line[i] - b'0') as usize),
-                _ => word_to_digit
+                _ => DIGITS
                     .iter()
                     .enumerate()
-                    .find_map(|(digit, word)| line[i..].starts_with(word).then_some(digit + 1)),
+                    .find_map(|(di, word)| line[i..].starts_with(word).then_some(di + 1)),
             });
             let a = digits.next().unwrap();
             let b = digits.last().unwrap_or(a);

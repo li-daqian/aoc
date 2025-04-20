@@ -2,7 +2,7 @@ use aoc_runner_derive::aoc;
 
 #[aoc(day11, part1)]
 pub fn part1(input: &str) -> usize {
-    let galaxies = parse_input(input, &1);
+    let galaxies = parse_input(input, &2);
 
     (0..galaxies.len())
         .into_iter()
@@ -21,7 +21,7 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day11, part2)]
 pub fn part2(input: &str) -> usize {
-    let galaxies = parse_input(input, &999999);
+    let galaxies = parse_input(input, &1000000);
 
     (0..galaxies.len())
         .into_iter()
@@ -61,10 +61,10 @@ fn parse_input(input: &str, expansion_time: &usize) -> Vec<(usize, usize)> {
     let expansion_galaxies = galaxies
         .iter()
         .map(|&(row, col)| {
-            let new_row =
-                row + galaxies_row.iter().take(row).filter(|&&x| !x).count() * expansion_time;
-            let new_col =
-                col + galaxies_col.iter().take(col).filter(|&&x| !x).count() * expansion_time;
+            let new_row = row
+                + galaxies_row.iter().take(row).filter(|&&x| !x).count() * (*expansion_time - 1);
+            let new_col = col
+                + galaxies_col.iter().take(col).filter(|&&x| !x).count() * (*expansion_time - 1);
             (new_row, new_col)
         })
         .collect::<Vec<_>>();

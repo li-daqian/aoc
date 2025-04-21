@@ -30,15 +30,6 @@ pub fn part2(input: &str) -> usize {
                 springs.extend(springs_copy.clone());
                 groups.extend(groups_copy.clone());
             });
-            println!(
-                "{} {}",
-                String::from_utf8_lossy(&springs),
-                groups
-                    .iter()
-                    .map(|g| g.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            );
             let mut memo = HashMap::new();
             count_arrangement(&springs, &groups, &mut memo)
         })
@@ -111,6 +102,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(SAMPLE), 506250);
+        assert_eq!(part2(SAMPLE), 525152);
     }
 }

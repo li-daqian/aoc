@@ -1,0 +1,25 @@
+[package]
+name = "aoc2022"
+description = "Advent of Code 2022"
+edition = "2021"
+rust-version = "1.82"
+version = "0.1.0"
+authors.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+aoc-runner = { workspace = true }
+aoc-runner-derive = { workspace = true }
+bit-vec = { workspace = true }
+indoc = { workspace = true }
+z3 = { workspace = true }
+
+[features]
+default = []
+
+[lib]
+bench = false

@@ -33,8 +33,37 @@ pub fn part1(input: &str) -> String {
     stacks.iter_mut().map(|s| s.pop().unwrap()).collect()
 }
 
-// #[aoc(day5, part2)]
-// pub fn part2(input: &str) -> usize {}
+#[aoc(day5, part2)]
+pub fn part2(input: &str) -> String {
+    let (drawing, moves) = input.split_once("\n\n").unwrap();
+    let mut lines = drawing.lines().rev();
+    let stack_count = lines.next().unwrap().split_whitespace().count();
+    let mut stacks: Vec<Vec<char>> = vec![Vec::new(); stack_count];
+
+    for line in drawing.lines().rev().skip(1) {
+        for (i, stack) in stacks.iter_mut().enumerate() {
+            let idx = 1 + i * 4;
+            if let Some(c) = line.chars().nth(idx) {
+                if c.is_ascii_alphabetic() {
+                    stack.push(c);
+                }
+            }
+        }
+    }
+
+    for line in moves.lines() {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        let count: usize = parts[1].parse().unwrap();
+        let from: usize = parts[3].parse::<usize>().unwrap() - 1;
+        let to: usize = parts[5].parse::<usize>().unwrap() - 1;
+
+        let split_point = stacks[from].len() - count;
+        let mut crates: Vec<char> = stacks[from].drain(split_point..).collect();
+        stacks[to].append(&mut crates);
+    }
+
+    stacks.iter_mut().map(|s| s.pop().unwrap()).collect()
+}
 
 #[cfg(test)]
 mod tests {
@@ -59,8 +88,8 @@ mod tests {
         assert_eq!(part1(SAMPLE), "CMZ");
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     assert_eq!(part2(SAMPLE), 4);
-    // }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(SAMPLE), "MCD");
+    }
 }

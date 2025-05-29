@@ -91,6 +91,57 @@ fn parse(input: &str) -> Vec<SimpleValve> {
         .collect()
 }
 
+/*
+ * Convert the valves into a weighted graph and generate a min distance matrix by using floyd warshall
+ *
+ *
+ * How we keep track of open valves
+ * Let's say that we have a list of 8 valves, and the starting valve is at index 3
+ * The starting bitmask in this case would look like this
+ * 0b11110111
+ *
+ * Open valves are represented by 0s and closed ones are 1s
+ *
+ * the size of the bitmask is based on how many valves we want to keep track of
+ * in our case the size is 2^8 - 1
+ * 2^8     = 0b100000000
+ * 2^8 - 1 = 0b011111111
+ *
+ * As perform the simulation we modify the bitmask according to what valves are opened, and we
+ * keep track of the highest possible flow rate out of each path combination
+ * We also use a hashmap that keeps track the highest flow rate that we can get out of
+ * different valve combinations (This will be important for part2)
+ *
+ * # Part 1
+ *
+ * This part is pretty straightforward, we can just use the highest flow rate returned by the
+ * simulation
+ *
+ *
+ * # Part 2
+ *
+ * Here, we simulate the paths of the elf and the elpehant separately which results in 2 path
+ * hashmaps
+ *
+ * After that we loop over each of the elf's paths and find paths that the elephant took
+ * that don't overlap (using some bitmasks magic) with the elf path being checked;
+ * Overlap here means that both of them opened the same valves, so we basically discard all
+ * paths where both of them have at least 1 valve in common because a valve can only be opened
+ * once.
+ *
+ * (! elf_mask) & (! elephant_mask) & init_mask == 0
+ * The reason why we flip elf_mask's and elephant_mask's bits is because open valves are represented by 0s
+ * instead of 1s (not sure why I thought this was a good idea) and then we have to AND the result
+ * with the initial mask because when we flip the bits of a number, all of the bits are flipped (depending on the integer size being used)
+ * and not only the ones being used, for example if we have 0b0011 that is stored within a u16 and
+ * we flip the bits we'll end up with 0b1111111111111100, as you can see the flipping will happen
+ * across all 16 bits, and that's why we AND the result with the initial_mask.
+ *
+ * If the result of the above bitmask expression results in a number that's bigger than 0 that
+ * means that we have overlaps and we have to skip the current pair.
+ * For pairs that don't have overlaps we add their highest flow rates together and compare them
+ * with the rest.
+ */
 fn simulate(
     valves: &Vec<SimpleValve>,
     dist: &Vec<Vec<u32>>,

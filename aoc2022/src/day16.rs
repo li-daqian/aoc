@@ -134,12 +134,13 @@ pub fn part2(input: &str) -> u32 {
         pos: &'a str,
         time: u32,
         opened: u64,
+        elephant: bool,
         useful: &[&'a str],
         graph: &HashMap<&'a str, Valve<'a>>,
         dist: &HashMap<(&'a str, &'a str), u32>,
-        memo: &mut HashMap<(&'a str, u32, u64), u32>,
+        memo: &mut HashMap<(&'a str, u32, u64, bool), u32>,
     ) -> u32 {
-        if let Some(&v) = memo.get(&(pos, time, opened)) {
+        if let Some(&v) = memo.get(&(pos, time, opened, elephant)) {
             return v;
         }
         let mut max = 0;
@@ -153,35 +154,33 @@ pub fn part2(input: &str) -> u32 {
             }
             let rem = time - d - 1;
             let gain = graph[next].flow * rem;
-            let total = gain + dfs(next, rem, opened | (1 << i), useful, graph, dist, memo);
+            let total = gain
+                + dfs(
+                    next,
+                    rem,
+                    opened | (1 << i),
+                    elephant,
+                    useful,
+                    graph,
+                    dist,
+                    memo,
+                );
             if total > max {
                 max = total;
             }
         }
-        memo.insert((pos, time, opened), max);
+        // Handoff to elephant if available
+        if elephant {
+            let total = dfs("AA", 26, opened, false, useful, graph, dist, memo);
+            if total > max {
+                max = total;
+            }
+        }
+        memo.insert((pos, time, opened, elephant), max);
         max
     }
 
-    let n = useful.len();
-    let mut best = 0;
-    // For each possible subset of useful valves (bitmask), assign to "you", rest to "elephant"
-    // Only need to check half the masks (symmetry)
-    for mask in 0..((1 << n) / 2) {
-        let you = dfs("AA", 26, mask as u64, &useful, &graph, &dist, &mut memo);
-        let elephant = dfs(
-            "AA",
-            26,
-            (!mask as u64) & ((1 << n) - 1),
-            &useful,
-            &graph,
-            &dist,
-            &mut memo,
-        );
-        if you + elephant > best {
-            best = you + elephant;
-        }
-    }
-    best
+    dfs("AA", 26, 0, true, &useful, &graph, &dist, &mut memo)
 }
 
 #[cfg(test)]

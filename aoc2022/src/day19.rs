@@ -45,6 +45,24 @@ fn parse(input: &str) -> Vec<Blueprint> {
 
 use std::collections::HashMap;
 
+#[derive(Clone, Copy)]
+enum Robot {
+    Ore,
+    Clay,
+    Obsidian,
+    Geode,
+}
+
+fn wait_for_resource(have: u32, robots: u32, required: u32) -> Option<u32> {
+    if have >= required {
+        Some(0)
+    } else if robots == 0 {
+        None
+    } else {
+        Some((required - have).div_ceil(robots))
+    }
+}
+
 fn max_geodes(blueprint: &Blueprint, minutes: u32) -> u32 {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
     struct State {
@@ -69,6 +87,40 @@ fn max_geodes(blueprint: &Blueprint, minutes: u32) -> u32 {
     .iter()
     .max()
     .unwrap();
+
+    fn next_state(
+        state: State,
+        remaining: u32,
+        ore_cost: u32,
+        clay_cost: u32,
+        obsidian_cost: u32,
+        robot: Robot,
+    ) -> Option<State> {
+        let wait_ore = wait_for_resource(state.ore, state.ore_robots, ore_cost)?;
+        let wait_clay = wait_for_resource(state.clay, state.clay_robots, clay_cost)?;
+        let wait_obsidian =
+            wait_for_resource(state.obsidian, state.obsidian_robots, obsidian_cost)?;
+        let wait = wait_ore.max(wait_clay).max(wait_obsidian);
+        let elapsed = wait + 1;
+        if elapsed > remaining {
+            return None;
+        }
+
+        let mut next = state;
+        next.time += elapsed;
+        next.ore = state.ore + state.ore_robots * elapsed - ore_cost;
+        next.clay = state.clay + state.clay_robots * elapsed - clay_cost;
+        next.obsidian = state.obsidian + state.obsidian_robots * elapsed - obsidian_cost;
+        next.geode += state.geode_robots * elapsed;
+
+        match robot {
+            Robot::Ore => next.ore_robots += 1,
+            Robot::Clay => next.clay_robots += 1,
+            Robot::Obsidian => next.obsidian_robots += 1,
+            Robot::Geode => next.geode_robots += 1,
+        }
+        Some(next)
+    }
 
     fn dfs(
         blueprint: &Blueprint,
@@ -103,79 +155,50 @@ fn max_geodes(blueprint: &Blueprint, minutes: u32) -> u32 {
 
         let mut max_geode = 0;
 
-        // Try to build geode robot if possible (always best)
-        if state.ore >= blueprint.geode_robot_ore
-            && state.obsidian >= blueprint.geode_robot_obsidian
-        {
-            let mut next = state;
-            next.time += 1;
-            next.ore += state.ore_robots;
-            next.clay += state.clay_robots;
-            next.obsidian += state.obsidian_robots;
-            next.geode += state.geode_robots;
-            next.ore -= blueprint.geode_robot_ore;
-            next.obsidian -= blueprint.geode_robot_obsidian;
-            next.geode_robots += 1;
-            max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
-            memo.insert(key, max_geode);
-            return max_geode;
+        // Jump directly to the next robot-building event instead of exploring
+        // every minute spent waiting for resources.
+        let actions = [
+            (
+                Robot::Geode,
+                blueprint.geode_robot_ore,
+                0,
+                blueprint.geode_robot_obsidian,
+                true,
+            ),
+            (
+                Robot::Obsidian,
+                blueprint.obsidian_robot_ore,
+                blueprint.obsidian_robot_clay,
+                0,
+                state.obsidian_robots < blueprint.geode_robot_obsidian,
+            ),
+            (
+                Robot::Clay,
+                blueprint.clay_robot_ore,
+                0,
+                0,
+                state.clay_robots < blueprint.obsidian_robot_clay,
+            ),
+            (
+                Robot::Ore,
+                blueprint.ore_robot_ore,
+                0,
+                0,
+                state.ore_robots < max_ore_cost,
+            ),
+        ];
+
+        for (robot, ore_cost, clay_cost, obsidian_cost, allowed) in actions {
+            if !allowed {
+                continue;
+            }
+            if let Some(next) = next_state(state, rem, ore_cost, clay_cost, obsidian_cost, robot) {
+                max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
+            }
         }
 
-        // Try to build obsidian robot
-        if state.ore >= blueprint.obsidian_robot_ore
-            && state.clay >= blueprint.obsidian_robot_clay
-            && state.obsidian_robots < blueprint.geode_robot_obsidian
-        {
-            let mut next = state;
-            next.time += 1;
-            next.ore += state.ore_robots;
-            next.clay += state.clay_robots;
-            next.obsidian += state.obsidian_robots;
-            next.geode += state.geode_robots;
-            next.ore -= blueprint.obsidian_robot_ore;
-            next.clay -= blueprint.obsidian_robot_clay;
-            next.obsidian_robots += 1;
-            max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
-        }
-
-        // Try to build clay robot
-        if state.ore >= blueprint.clay_robot_ore
-            && state.clay_robots < blueprint.obsidian_robot_clay
-        {
-            let mut next = state;
-            next.time += 1;
-            next.ore += state.ore_robots;
-            next.clay += state.clay_robots;
-            next.obsidian += state.obsidian_robots;
-            next.geode += state.geode_robots;
-            next.ore -= blueprint.clay_robot_ore;
-            next.clay_robots += 1;
-            max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
-        }
-
-        // Try to build ore robot
-        if state.ore >= blueprint.ore_robot_ore && state.ore_robots < max_ore_cost {
-            let mut next = state;
-            next.time += 1;
-            next.ore += state.ore_robots;
-            next.clay += state.clay_robots;
-            next.obsidian += state.obsidian_robots;
-            next.geode += state.geode_robots;
-            next.ore -= blueprint.ore_robot_ore;
-            next.ore_robots += 1;
-            max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
-        }
-
-        // Or do nothing (collect only)
-        {
-            let mut next = state;
-            next.time += 1;
-            next.ore += state.ore_robots;
-            next.clay += state.clay_robots;
-            next.obsidian += state.obsidian_robots;
-            next.geode += state.geode_robots;
-            max_geode = max_geode.max(dfs(blueprint, next, minutes, max_ore_cost, memo, best));
-        }
+        // If no more robot can be built, collect geodes for the remaining time.
+        max_geode = max_geode.max(state.geode + state.geode_robots * rem);
 
         memo.insert(key, max_geode);
         max_geode

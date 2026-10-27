@@ -13,5 +13,5 @@ repository = "https://github.com/li-daqian/aoc"
 aoc-runner = { version = "0.3" }
 aoc-runner-derive = { version = "0.3" }
 indoc = { version = "2" }
-bit-vec = { version = "0.8.0" }
-z3 = { version = "0.12" }
+bit-vec = { version = "0.10.1" }
+z3 = { version = "0.21.1" }

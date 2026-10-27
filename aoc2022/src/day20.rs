@@ -61,12 +61,25 @@ fn mix(nodes: &mut [Node], order: &[usize], rounds: usize) {
             let mut anchor = nodes[node].prev;
             detach(nodes, node);
 
-            if value > 0 {
-                for _ in 0..value.rem_euclid(modulo) {
+            let steps = if value > 0 {
+                value.rem_euclid(modulo)
+            } else {
+                (-value).rem_euclid(modulo)
+            };
+            let use_shorter_path = steps > modulo / 2;
+            let distance = if use_shorter_path {
+                modulo - steps
+            } else {
+                steps
+            };
+
+            let move_forward = (value > 0) != use_shorter_path;
+            if move_forward {
+                for _ in 0..distance {
                     anchor = nodes[anchor].next;
                 }
             } else {
-                for _ in 0..(-value).rem_euclid(modulo) {
+                for _ in 0..distance {
                     anchor = nodes[anchor].prev;
                 }
             }

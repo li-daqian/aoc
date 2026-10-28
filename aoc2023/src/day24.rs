@@ -1,5 +1,5 @@
 use aoc_runner_derive::aoc;
-use z3::ast::{Ast, Int, Real};
+use z3::ast::{Int, Real};
 
 fn parse(input: &str) -> Vec<Vec<f64>> {
     input
@@ -70,11 +70,9 @@ pub fn part1(input: &str) -> usize {
 pub fn part2(input: &str) -> usize {
     let hailstones = parse(input);
 
-    let ctx = z3::Context::new(&z3::Config::new());
-    let s = z3::Solver::new(&ctx);
-    let [fx, fy, fz, fdx, fdy, fdz] =
-        ["fx", "fy", "fz", "fdx", "fdy", "fdz"].map(|v| Real::new_const(&ctx, v));
-    let zero = Int::from_i64(&ctx, 0).to_real();
+    let s = z3::Solver::new();
+    let [fx, fy, fz, fdx, fdy, fdz] = ["fx", "fy", "fz", "fdx", "fdy", "fdz"].map(Real::new_const);
+    let zero = Int::from_i64(0).to_real();
     for (i, hailstone) in hailstones[..3].iter().enumerate() {
         let (x, y, z, dx, dy, dz) = (
             hailstone[0],
@@ -84,13 +82,12 @@ pub fn part2(input: &str) -> usize {
             hailstone[4],
             hailstone[5],
         );
-        let [x, y, z, dx, dy, dz] =
-            [x, y, z, dx, dy, dz].map(|v| Int::from_i64(&ctx, v as _).to_real());
-        let t = Real::new_const(&ctx, format!("t{i}"));
+        let [x, y, z, dx, dy, dz] = [x, y, z, dx, dy, dz].map(|v| Int::from_i64(v as _).to_real());
+        let t = Real::new_const(format!("t{i}"));
         s.assert(&t.ge(&zero));
-        s.assert(&((&x + &dx * &t)._eq(&(&fx + &fdx * &t))));
-        s.assert(&((&y + &dy * &t)._eq(&(&fy + &fdy * &t))));
-        s.assert(&((&z + &dz * &t)._eq(&(&fz + &fdz * &t))));
+        s.assert(&((&x + &dx * &t).eq(&(&fx + &fdx * &t))));
+        s.assert(&((&y + &dy * &t).eq(&(&fy + &fdy * &t))));
+        s.assert(&((&z + &dz * &t).eq(&(&fz + &fdz * &t))));
     }
     assert_eq!(s.check(), z3::SatResult::Sat);
     let res = s

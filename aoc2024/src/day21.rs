@@ -1,7 +1,6 @@
 use std::{
     cmp::Reverse,
     collections::{BinaryHeap, HashMap},
-    usize,
 };
 
 use aoc_runner_derive::aoc;

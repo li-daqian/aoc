@@ -1,5 +1,3 @@
-use std::{usize, vec};
-
 use aoc_runner_derive::aoc;
 
 const NORTH: usize = 0;

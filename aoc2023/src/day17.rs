@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, collections::BinaryHeap, usize, vec};
+use std::{cmp::Reverse, collections::BinaryHeap};
 
 use aoc_runner_derive::aoc;
 

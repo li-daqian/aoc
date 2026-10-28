@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    i64,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use aoc_runner_derive::aoc;
 

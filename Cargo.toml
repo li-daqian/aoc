@@ -1,5 +1,5 @@
 [workspace]
-members = ["aoc2024", "aoc2023", "aoc2022"]
+members = ["aoc2025", "aoc2024", "aoc2023", "aoc2022"]
 resolver = "2"
 
 [workspace.package]
